@@ -1,5 +1,5 @@
 import { getRecord, setRecord } from "./db";
-import type { TPlanet, TSwapiApiResponse } from "./types";
+import type { TPlanet, TResident, TSwapiApiResponse } from "./types";
 
 const API_URL = 'https://swapi.dev/api';
 
@@ -46,4 +46,64 @@ export const GetPlanets = async (cursor: number = 1): Promise<TSwapiApiResponse<
     } catch (error: any) {
         throw new Error(error);
     };
+};
+
+// this is used for planet/+page pages, since we want to allow users to link different planets
+export const GetPlanet = async (cursor: string = ''): Promise<TPlanet> => {
+    try {
+        const cacheKey = `planet-${cursor}`;
+        const cache = await getRecord('planets', cacheKey);
+
+        if (cache) {
+            return cache as TPlanet;
+        }
+
+        const response = await fetch(`${API_URL}/planet/${cursor}/`, {
+            headers: {
+                'content-type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+
+        const data: TPlanet = await response.json();
+
+        await setRecord('planets', cacheKey, data);
+
+        return data;
+    } catch (error: any) {
+        throw new Error(error);
+    }
+};
+
+// this is used on the planet/+page page since we need to load a list of residents
+export const GetResident = async (cursor: string = ''): Promise<TResident> => {
+    try {
+        const cacheKey = `resident-${cursor}`;
+        const cache = await getRecord('residents', cacheKey);
+
+        if (cache) {
+            return cache as TResident;
+        }
+
+        const response = await fetch(`${API_URL}/people/${cursor}/`, {
+            headers: {
+                'content-type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+
+        const data: TResident = await response.json();
+
+        await setRecord('residents', cacheKey, data);
+
+        return data;
+    } catch (error: any) {
+        throw new Error(error);
+    }
 };
